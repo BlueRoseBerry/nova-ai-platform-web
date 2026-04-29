@@ -25,6 +25,11 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
+      // Agent 独立服务 nova-ai-agent 默认 8082，需先于通用 /api 匹配
+      '/api/v1/agents': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+      },
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,

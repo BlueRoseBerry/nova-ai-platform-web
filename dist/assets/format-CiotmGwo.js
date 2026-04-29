@@ -1,0 +1,1 @@
+import{aG as f}from"./index-CYKcI53H.js";const n=(t,o="YYYY-MM-DD HH:mm:ss")=>f(t).format(o),s=t=>{const o=f(),a=f(t),r=o.diff(a,"second");return r<60?"刚刚":r<3600?`${Math.floor(r/60)}分钟前`:r<86400?`${Math.floor(r/3600)}小时前`:r<604800?`${Math.floor(r/86400)}天前`:n(t)};export{n as a,s as f};

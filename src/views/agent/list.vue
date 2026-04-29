@@ -5,7 +5,7 @@
         <h2 class="page-title">Agent 管理</h2>
         <p class="page-subtitle">管理和配置智能体 Agent</p>
       </div>
-      <el-button type="primary" @click="showCreateDialog = true">
+      <el-button type="primary" @click="openCreateDialog">
         <el-icon><Plus /></el-icon>
         注册 Agent
       </el-button>
@@ -49,18 +49,30 @@
           <el-tag type="info" size="small">{{ row.skillIds?.length || 0 }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="180" fixed="right">
+      <el-table-column label="操作" width="240" fixed="right">
         <template #default="{ row }">
           <el-button size="small" @click="viewDetail(row)">查看</el-button>
+          <el-button size="small" type="warning" @click="openEditDialog(row)">编辑</el-button>
           <el-button size="small" type="primary" @click="testAgent(row)">测试</el-button>
-          <el-button size="small" type="danger" @click="deleteAgent(row)">删除</el-button>
+          <el-button size="small" type="danger" @click="confirmDeleteAgent(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
 
     <!-- 创建/编辑对话框 -->
-    <el-dialog v-model="showCreateDialog" title="注册新 Agent" width="600px">
+    <el-dialog v-model="showCreateDialog" :title="dialogTitle" width="600px">
       <el-form :model="createForm" label-width="120px">
+        <el-form-item label="Agent ID" required>
+          <el-input
+            v-model="createForm.id"
+            placeholder="唯一标识，可与名称不同；留空则自动生成"
+            :disabled="isEditMode"
+          >
+            <template #append>
+              <el-button @click="createForm.id = generateAgentId()">生成 ID</el-button>
+            </template>
+          </el-input>
+        </el-form-item>
         <el-form-item label="Agent 名称" required>
           <el-input v-model="createForm.name" placeholder="请输入 Agent 名称" />
         </el-form-item>
@@ -92,76 +104,33 @@
       </el-form>
       <template #footer>
         <el-button @click="showCreateDialog = false">取消</el-button>
-        <el-button type="primary" @click="handleCreateAgent">确认注册</el-button>
+        <el-button type="primary" @click="submitAgent">{{ submitButtonLabel }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, Cpu } from '@element-plus/icons-vue'
+import {
+  deleteRegisteredAgent,
+  listAgents,
+  registerAgent,
+  updateAgent,
+} from '@/api'
+import type { Agent } from '@/types'
 
 const router = useRouter()
 const loading = ref(false)
 const showCreateDialog = ref(false)
-
-const agentStats = [
-  { label: '总 Agent 数', value: 12 },
-  { label: '活跃 Agent', value: 8 },
-  { label: '今日调用', value: '2,345' },
-  { label: '平均响应', value: '1.2s' },
-]
-
-const agentList = ref([
-  {
-    id: 'agent-001',
-    name: '智能客服 Agent',
-    role: '客服',
-    systemPrompt: '你是一个专业的客服助手...',
-    skillIds: ['skill-001', 'skill-002'],
-    config: {},
-    modelId: 'gpt-4',
-    temperature: 0.7,
-    maxTokens: 2000,
-  },
-  {
-    id: 'agent-002',
-    name: '金融顾问 Agent',
-    role: '顾问',
-    systemPrompt: '你是一个专业的金融顾问...',
-    skillIds: ['skill-003', 'skill-004'],
-    config: {},
-    modelId: 'gpt-4',
-    temperature: 0.5,
-    maxTokens: 3000,
-  },
-  {
-    id: 'agent-003',
-    name: '政务咨询 Agent',
-    role: '咨询',
-    systemPrompt: '你是一个政务咨询助手...',
-    skillIds: ['skill-001'],
-    config: {},
-    modelId: 'qwen-max',
-    temperature: 0.3,
-    maxTokens: 2000,
-  },
-  {
-    id: 'agent-004',
-    name: '技术支持 Agent',
-    role: '技术支持',
-    systemPrompt: '你是一个技术支持专家...',
-    skillIds: ['skill-002', 'skill-004'],
-    config: {},
-    modelId: 'claude-3',
-    temperature: 0.6,
-    maxTokens: 4000,
-  },
-])
+const isEditMode = ref(false)
+/** 编辑时保留服务端已有 skillIds / config（表单暂未编辑这些字段） */
+const editingSnapshot = ref<Agent | null>(null)
 
 const createForm = reactive({
+  id: '',
   name: '',
   role: '',
   systemPrompt: '',
@@ -170,30 +139,140 @@ const createForm = reactive({
   maxTokens: 2000,
 })
 
+const generateAgentId = () => `agent-${Date.now().toString(36)}`
+
+const resetCreateForm = () => {
+  createForm.id = ''
+  createForm.name = ''
+  createForm.role = ''
+  createForm.systemPrompt = ''
+  createForm.modelId = 'gpt-4'
+  createForm.temperature = 0.7
+  createForm.maxTokens = 2000
+}
+
+const dialogTitle = computed(() => (isEditMode.value ? '编辑 Agent' : '注册新 Agent'))
+const submitButtonLabel = computed(() => (isEditMode.value ? '保存' : '确认注册'))
+
+const openCreateDialog = () => {
+  isEditMode.value = false
+  editingSnapshot.value = null
+  resetCreateForm()
+  showCreateDialog.value = true
+}
+
+const openEditDialog = (row: Agent) => {
+  isEditMode.value = true
+  editingSnapshot.value = row
+  createForm.id = row.id
+  createForm.name = row.name
+  createForm.role = row.role ?? ''
+  createForm.systemPrompt = row.systemPrompt
+  createForm.modelId = row.modelId
+  createForm.temperature = row.temperature
+  createForm.maxTokens = row.maxTokens
+  showCreateDialog.value = true
+}
+
+const agentList = ref<Agent[]>([])
+
+const agentStats = computed(() => {
+  const n = agentList.value.length
+  return [
+    { label: '总 Agent 数', value: String(n) },
+    { label: '数据源', value: '后端实时' },
+    { label: 'Agent 服务', value: ':8082' },
+    { label: '加载中', value: loading.value ? '是' : '否' },
+  ]
+})
+
+const loadAgents = async () => {
+  loading.value = true
+  try {
+    const data = await listAgents()
+    agentList.value = Array.isArray(data) ? data : []
+  } catch {
+    agentList.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  loadAgents()
+})
+
 const temperatureColor = (temp: number) => {
   if (temp < 0.4) return '#10b981'
   if (temp < 0.7) return '#f59e0b'
   return '#ef4444'
 }
 
-const viewDetail = (row: any) => {
-  ElMessage.info(`查看 ${row.name} 详情`)
+const viewDetail = (row: Agent) => {
+  ElMessage.info(`Agent「${row.name}」(${row.id}) — 详情可在列表与测试页查看`)
 }
 
-const testAgent = (row: any) => {
-  router.push('/agent/test')
+const testAgent = (row: Agent) => {
+  router.push({ path: '/agent/test', query: { agentId: row.id } })
 }
 
-const deleteAgent = async (row: any) => {
+const confirmDeleteAgent = async (row: Agent) => {
   try {
-    await ElMessageBox.confirm(`确定要删除 Agent「${row.name}」吗？`, '删除确认', { type: 'warning' })
-    ElMessage.success('删除成功')
-  } catch {}
+    await ElMessageBox.confirm(`确定要删除 Agent「${row.name}」(${row.id}) 吗？此操作不可恢复。`, '删除确认', {
+      type: 'error',
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+    })
+  } catch {
+    return
+  }
+  try {
+    await deleteRegisteredAgent(row)
+    ElMessage.success('已删除')
+    await loadAgents()
+  } catch {
+    /* 失败由 request 拦截器提示 */
+  }
 }
 
-const handleCreateAgent = () => {
-  ElMessage.success('Agent 注册成功')
-  showCreateDialog.value = false
+const submitAgent = async () => {
+  if (!createForm.name?.trim()) {
+    ElMessage.warning('请填写 Agent 名称')
+    return
+  }
+  if (!createForm.systemPrompt?.trim()) {
+    ElMessage.warning('请填写系统提示词')
+    return
+  }
+  const id = createForm.id.trim() || generateAgentId()
+  const snap = editingSnapshot.value
+  const payload: Agent = {
+    id,
+    name: createForm.name.trim(),
+    role: (createForm.role || 'assistant').trim(),
+    systemPrompt: createForm.systemPrompt.trim(),
+    skillIds: isEditMode.value && snap ? [...(snap.skillIds ?? [])] : [],
+    config: isEditMode.value && snap ? { ...(snap.config ?? {}) } : {},
+    modelId: createForm.modelId,
+    temperature: createForm.temperature,
+    maxTokens: createForm.maxTokens,
+  }
+  try {
+    if (isEditMode.value) {
+      await updateAgent(payload)
+      ElMessage.success('Agent 已更新')
+    } else {
+      await registerAgent(payload)
+      ElMessage.success('Agent 注册成功')
+    }
+    showCreateDialog.value = false
+    editingSnapshot.value = null
+    resetCreateForm()
+    isEditMode.value = false
+    await loadAgents()
+  } catch {
+    /* 全局已提示 */
+  }
 }
 </script>
 

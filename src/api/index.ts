@@ -16,20 +16,30 @@ import type {
 } from '@/types'
 
 // ==================== Agent 相关 API ====================
+/** 对齐 nova-ai-agent AgentController：`/api/v1/agents/**`（默认服务端口 8082，见 vite 代理配置） */
 export const executeAgent = (data: AgentRequest) => {
-  return request.post<AgentResponse>('/api/v1/agent/execute', data)
+  return request.post<AgentResponse>('/api/v1/agents/execute', data)
 }
 
 export const getAgent = (agentId: string) => {
-  return request.get<Agent>(`/api/v1/agent/${agentId}`)
+  return request.get<Agent>(`/api/v1/agents/${encodeURIComponent(agentId)}`)
 }
 
 export const listAgents = () => {
-  return request.get<Agent[]>('/api/v1/agent/list')
+  return request.get<Agent[]>('/api/v1/agents/lists')
 }
 
 export const registerAgent = (data: Agent) => {
-  return request.post<Agent>('/api/v1/agent/register', data)
+  return request.post<void>('/api/v1/agents/register', data)
+}
+
+export const updateAgent = (data: Agent) => {
+  return request.post<Agent>('/api/v1/agents/update', data)
+}
+
+/** 请求体使用完整 Agent，后端仅读取 id 字段 */
+export const deleteRegisteredAgent = (data: Agent) => {
+  return request.post<boolean>('/api/v1/agents/delete', data)
 }
 
 // ==================== Workflow 相关 API ====================
