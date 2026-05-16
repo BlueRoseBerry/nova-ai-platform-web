@@ -5,15 +5,21 @@ import type {
   AgentResponse,
   WorkflowDefinition,
   WorkflowInstance,
-  ChatRequest,
-  ChatResponse,
-  ModelProvider,
   KnowledgeDocument,
   RetrievedChunk,
   Skill,
   SkillContext,
   SkillResult,
 } from '@/types'
+
+export {
+  createLlmModel,
+  getLlmModel,
+  updateLlmModel,
+  deleteLlmModel,
+  pageLlmModels,
+  chatCompletions,
+} from '@/api/modelRegistry'
 
 // ==================== Agent 相关 API ====================
 /** 对齐 nova-ai-agent AgentController：`/api/v1/agents/**`（默认服务端口 8082，见 vite 代理配置） */
@@ -61,19 +67,6 @@ export const listWorkflowDefinitions = () => {
 
 export const getWorkflowInstance = (instanceId: string) => {
   return request.get<WorkflowInstance>(`/api/v1/workflow/instance/${instanceId}`)
-}
-
-// ==================== Model Gateway 相关 API ====================
-export const chatModel = (provider: string, data: ChatRequest) => {
-  return request.post<ChatResponse>(`/api/v1/model/${provider}/chat`, data)
-}
-
-export const chatWithFallback = (providers: string[], data: ChatRequest) => {
-  return request.post<ChatResponse>('/api/v1/model/chat-fallback', { providers, ...data })
-}
-
-export const getAvailableProviders = () => {
-  return request.get<ModelProvider[]>('/api/v1/model/providers')
 }
 
 // ==================== RAG 相关 API ====================

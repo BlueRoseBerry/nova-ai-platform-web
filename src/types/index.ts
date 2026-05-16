@@ -153,7 +153,81 @@ export interface WorkflowInstance {
 
 export type WorkflowStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'PAUSED' | 'WAITING_HUMAN_REVIEW'
 
-// 模型请求
+// 模型注册表（llm_model）
+export interface LlmModelResponse {
+  id: string
+  name: string
+  provider: string
+  invokeFormat: string
+  remoteModel: string
+  baseUrl?: string
+  hasApiSecret: boolean
+  defaultTemperature?: number
+  defaultMaxTokens?: number
+  enabled: boolean
+  description?: string
+  extraConfig?: Record<string, unknown>
+  createdAtEpochMillis: number
+  updatedAtEpochMillis: number
+}
+
+export interface ModelCreatePayload {
+  id: string
+  name: string
+  provider: string
+  invokeFormat: string
+  remoteModel: string
+  baseUrl?: string
+  apiKey?: string
+  defaultTemperature?: number
+  defaultMaxTokens?: number
+  enabled: boolean
+  description?: string
+  extraConfig?: Record<string, unknown>
+}
+
+export interface ModelUpdatePayload {
+  id: string
+  name?: string
+  provider?: string
+  invokeFormat?: string
+  remoteModel?: string
+  baseUrl?: string
+  apiKeySecretUpdate?: string
+  defaultTemperature?: number
+  defaultMaxTokens?: number
+  enabled?: boolean
+  description?: string
+  extraConfig?: Record<string, unknown>
+}
+
+export interface LlmModelPageParams {
+  pageNum: number
+  pageSize: number
+  enabled?: boolean
+}
+
+export interface ChatMessagePayload {
+  role: string
+  content: string
+}
+
+export interface OpenAiCompletionRequest {
+  registryModelId: string
+  messages: ChatMessagePayload[]
+  temperature?: number
+  maxTokens?: number
+}
+
+export interface OpenAiCompletionResponse {
+  registryModelId: string
+  content: string
+  promptTokens: number
+  completionTokens: number
+  remoteModelUsed: string
+}
+
+/** @deprecated 旧适配器占位接口，请使用 OpenAiCompletionRequest */
 export interface ChatRequest {
   model: string
   prompt: string
@@ -162,20 +236,12 @@ export interface ChatRequest {
   extraParams?: Record<string, any>
 }
 
-// 模型响应
+/** @deprecated 请使用 OpenAiCompletionResponse */
 export interface ChatResponse {
   content: string
   promptTokens: number
   completionTokens: number
   model: string
-}
-
-// 模型提供商
-export interface ModelProvider {
-  provider: string
-  name: string
-  status: 'active' | 'inactive'
-  endpoint: string
 }
 
 // 知识库文档

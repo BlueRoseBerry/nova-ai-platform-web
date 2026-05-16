@@ -99,7 +99,7 @@ const routes: RouteRecordRaw[] = [
             path: 'providers',
             name: 'ModelProviders',
             component: () => import('@/views/model/providers.vue'),
-            meta: { title: '模型提供商', icon: 'Setting' },
+            meta: { title: '模型注册', icon: 'Setting' },
           },
           {
             path: 'chat',

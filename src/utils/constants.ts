@@ -25,6 +25,17 @@ export const API_PATHS = {
     PAGE: '/api/v1/digital-human/page',
     PUBLISH: (id: number) => `/api/v1/digital-human/publish/${id}`,
   },
+  MODEL_REGISTRY: {
+    CREATE: '/api/v1/model/registry/create',
+    GET: (id: string) => `/api/v1/model/registry/get/${encodeURIComponent(id)}`,
+    UPDATE: '/api/v1/model/registry/update',
+    DELETE: (id: string) => `/api/v1/model/registry/delete/${encodeURIComponent(id)}`,
+    PAGE: '/api/v1/model/registry/page',
+  },
+  MODEL_CHAT: {
+    COMPLETIONS: '/api/v1/model/chat/completions',
+    COMPLETIONS_STREAM: '/api/v1/model/chat/completions/stream',
+  },
 } as const
 
 // 状态映射
@@ -65,6 +76,17 @@ export const MODEL_PROVIDER_MAP = {
   tongyi: { label: '通义千问', icon: '💡' },
   local: { label: '本地模型', icon: '💻' },
 } as const
+
+/** 与后端 llm_model.invoke_format 对齐 */
+export const INVOKE_FORMAT_OPTIONS = [
+  { label: 'OpenAI Chat Completions', value: 'openai_chat_completions' },
+] as const
+
+export const MODEL_PROVIDER_OPTIONS = [
+  { label: 'OpenAI', value: 'openai' },
+  { label: 'Anthropic', value: 'anthropic' },
+  { label: '通义千问', value: 'tongyi' },
+] as const
 
 // 默认分页配置
 export const DEFAULT_PAGE_SIZE = 10

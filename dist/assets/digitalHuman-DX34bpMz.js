@@ -1,0 +1,1 @@
+import{r}from"./request-CsAcjfas.js";import{at as a}from"./index-QXs0eMEY.js";const o=t=>r.post(a.DIGITAL_HUMAN.CREATE,t),i=t=>r.post(a.DIGITAL_HUMAN.DELETE(t)),n=t=>r.post(a.DIGITAL_HUMAN.PUBLISH(t));export{o as c,i as d,n as p};
