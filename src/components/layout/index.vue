@@ -79,6 +79,7 @@ import { useAppStore } from '@/store/modules/app'
 import { useUserStore } from '@/store/modules/user'
 import { Fold, Expand, UserFilled, Cpu } from '@element-plus/icons-vue'
 import SidebarMenu from './SidebarMenu.vue'
+import { logoutUser } from '@/api/user'
 
 const router = useRouter()
 const route = useRoute()
@@ -100,15 +101,20 @@ const updateBreadcrumbs = () => {
 
 watch(() => route.path, updateBreadcrumbs, { immediate: true })
 
-const handleCommand = (command: string) => {
+const handleCommand = async (command: string) => {
   switch (command) {
     case 'profile':
-      ElMessage.info('个人中心开发中')
+      router.push('/user/list')
       break
     case 'settings':
       ElMessage.info('系统设置开发中')
       break
     case 'logout':
+      try {
+        await logoutUser()
+      } catch {
+        /* 令牌失效或网络异常时仍清理本地态 */
+      }
       userStore.logout()
       router.push('/login')
       ElMessage.success('已退出登录')

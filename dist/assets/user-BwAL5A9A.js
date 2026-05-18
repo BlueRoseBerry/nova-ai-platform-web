@@ -1,0 +1,1 @@
+import{r as s}from"./request-CllPoi-f.js";import{aw as t}from"./index-ZJmfrwp_.js";const E=r=>s.post(t.USER.LOGIN,r),U=()=>s.post(t.USER.LOGOUT),n=r=>s.post(t.USER.CREATE,r),a=r=>s.post(t.USER.CREATE,r),p=r=>s.post(t.USER.UPDATE,r),u=r=>s.post(t.USER.DELETE(r)),c=r=>s.get(t.USER.PAGE,r);export{U as a,n as c,u as d,E as l,c as p,a as r,p as u};

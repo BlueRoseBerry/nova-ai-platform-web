@@ -1,0 +1,1 @@
+import{r}from"./request-CllPoi-f.js";import{aw as a}from"./index-ZJmfrwp_.js";const o=t=>r.post(a.DIGITAL_HUMAN.CREATE,t),i=t=>r.post(a.DIGITAL_HUMAN.DELETE(t)),n=t=>r.post(a.DIGITAL_HUMAN.PUBLISH(t));export{o as c,i as d,n as p};

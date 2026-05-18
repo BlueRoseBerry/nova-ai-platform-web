@@ -3,7 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/store/modules/user'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
-import { LOGIN_ROUTE, DEFAULT_ROUTE } from '@/utils/constants'
+import { LOGIN_ROUTE, REGISTER_ROUTE, PUBLIC_ROUTES, DEFAULT_ROUTE } from '@/utils/constants'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -11,6 +11,12 @@ const routes: RouteRecordRaw[] = [
     name: 'Login',
     component: () => import('@/views/login/index.vue'),
     meta: { title: '登录', hidden: true },
+  },
+  {
+    path: REGISTER_ROUTE,
+    name: 'Register',
+    component: () => import('@/views/register/index.vue'),
+    meta: { title: '注册', hidden: true },
   },
   {
     path: '/',
@@ -163,6 +169,20 @@ const routes: RouteRecordRaw[] = [
           },
         ],
       },
+      {
+        path: '/user',
+        name: 'UserManage',
+        redirect: '/user/list',
+        meta: { title: '用户管理', icon: 'User' },
+        children: [
+          {
+            path: 'list',
+            name: 'UserList',
+            component: () => import('@/views/user/list.vue'),
+            meta: { title: '用户列表', icon: 'UserFilled' },
+          },
+        ],
+      },
     ],
   },
 ]
@@ -179,11 +199,17 @@ router.beforeEach((to, _from, next) => {
   document.title = (to.meta?.title as string) || 'Nova AI Platform'
 
   const userStore = useUserStore()
-  if (to.path !== LOGIN_ROUTE && !userStore.isLoggedIn) {
-    next({ path: LOGIN_ROUTE })
-  } else {
-    next()
+  const isPublicRoute = (PUBLIC_ROUTES as readonly string[]).includes(to.path)
+
+  if (isPublicRoute && userStore.isLoggedIn) {
+    next({ path: DEFAULT_ROUTE })
+    return
   }
+  if (!isPublicRoute && !userStore.isLoggedIn) {
+    next({ path: LOGIN_ROUTE })
+    return
+  }
+  next()
 })
 
 router.afterEach(() => {

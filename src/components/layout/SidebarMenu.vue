@@ -82,7 +82,17 @@ const menuList = computed<MenuRoute[]>(() => {
         })) || [],
     }))
     .sort((a, b) => {
-      const order = ['/dashboard', '/digital-human', '/agent', '/workflow', '/model', '/knowledge', '/skill', '/monitor']
+      const order = [
+        '/dashboard',
+        '/digital-human',
+        '/agent',
+        '/workflow',
+        '/model',
+        '/knowledge',
+        '/skill',
+        '/user',
+        '/monitor',
+      ]
       return order.indexOf(a.path) - order.indexOf(b.path)
     })
 })

@@ -1,1 +1,0 @@
-import{r as t}from"./request-CsAcjfas.js";const r=e=>t.post("/api/v1/agents/execute",e),n=()=>t.get("/api/v1/agents/lists"),a=e=>t.post("/api/v1/agents/register",e),g=e=>t.post("/api/v1/agents/update",e),p=e=>t.post("/api/v1/agents/delete",e);export{p as d,r as e,n as l,a as r,g as u};

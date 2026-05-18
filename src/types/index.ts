@@ -331,10 +331,77 @@ export interface ServiceHealth {
   version: string
 }
 
-// 用户信息
+// 用户信息（登录态）
 export interface UserInfo {
   userId: string
+  account: string
   username: string
   role: string
   avatar?: string
+  tenant?: string
+}
+
+/** 后端 sys_user 实体（列表/详情） */
+export interface SysUser {
+  id: number
+  name?: string
+  email?: string
+  account: string
+  phone?: string
+  avatar?: string
+  group?: string
+  role?: string
+  tenant?: string
+  deleted?: boolean
+  createUser?: string
+  updateUser?: string
+  createDate?: string
+  updateDate?: string
+}
+
+export interface UserLoginPayload {
+  account: string
+  password: string
+}
+
+export interface UserLoginResponse {
+  token: string
+  expiresIn: number
+  userId: number
+  account: string
+  name?: string
+  role?: string
+  tenant?: string
+}
+
+export interface UserPageResult {
+  total: number
+  pages: number
+  current: number
+  pageSize: number
+  records: SysUser[]
+}
+
+export interface UserCreatePayload {
+  name?: string
+  email?: string
+  account: string
+  password: string
+  phone?: string
+  avatar?: string
+  group?: string
+  role?: string
+  tenant?: string
+}
+
+export interface UserUpdatePayload {
+  id: number
+  name?: string
+  email?: string
+  password?: string
+  phone?: string
+  avatar?: string
+  group?: string
+  role?: string
+  tenant?: string
 }

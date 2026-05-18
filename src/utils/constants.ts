@@ -5,6 +5,10 @@ export const APP_LOGO = '/logo.png'
 // 路由常量
 export const DEFAULT_ROUTE = '/dashboard'
 export const LOGIN_ROUTE = '/login'
+export const REGISTER_ROUTE = '/register'
+
+/** 无需登录即可访问的路由 */
+export const PUBLIC_ROUTES = [LOGIN_ROUTE, REGISTER_ROUTE] as const
 
 // 存储键名
 export const STORAGE_KEYS = {
@@ -35,6 +39,15 @@ export const API_PATHS = {
   MODEL_CHAT: {
     COMPLETIONS: '/api/v1/model/chat/completions',
     COMPLETIONS_STREAM: '/api/v1/model/chat/completions/stream',
+  },
+  USER: {
+    LOGIN: '/api/v1/user/login',
+    LOGOUT: '/api/v1/user/logout',
+    CREATE: '/api/v1/user/create',
+    GET: (id: number) => `/api/v1/user/get/${id}`,
+    UPDATE: '/api/v1/user/update',
+    DELETE: (id: number) => `/api/v1/user/delete/${id}`,
+    PAGE: '/api/v1/user/page',
   },
 } as const
 

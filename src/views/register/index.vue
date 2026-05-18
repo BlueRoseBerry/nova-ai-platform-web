@@ -1,41 +1,70 @@
 <template>
-  <div class="login-container">
-    <div class="login-background">
+  <div class="register-container">
+    <div class="register-background">
       <div class="circle circle-1"></div>
       <div class="circle circle-2"></div>
       <div class="circle circle-3"></div>
     </div>
 
-    <div class="login-card">
-      <div class="login-header">
-        <div class="login-logo-icon">
+    <div class="register-card">
+      <div class="register-header">
+        <div class="register-logo-icon">
           <el-icon :size="40" color="#667eea"><Cpu /></el-icon>
         </div>
-        <h2 class="login-title">Nova AI Platform</h2>
-        <p class="login-subtitle">数字人智能体管理平台</p>
+        <h2 class="register-title">注册账户</h2>
+        <p class="register-subtitle">创建 Nova AI Platform 账号</p>
       </div>
 
       <el-form
         ref="formRef"
-        :model="loginForm"
+        :model="registerForm"
         :rules="rules"
-        class="login-form"
-        @keyup.enter="handleLogin"
+        class="register-form"
+        @keyup.enter="handleRegister"
       >
         <el-form-item prop="account">
           <el-input
-            v-model="loginForm.account"
+            v-model="registerForm.account"
             placeholder="请输入账号"
             size="large"
             :prefix-icon="User"
           />
         </el-form-item>
 
+        <el-form-item prop="name">
+          <el-input
+            v-model="registerForm.name"
+            placeholder="请输入姓名（选填）"
+            size="large"
+            :prefix-icon="UserFilled"
+          />
+        </el-form-item>
+
+        <el-form-item prop="email">
+          <el-input
+            v-model="registerForm.email"
+            placeholder="请输入邮箱（选填）"
+            size="large"
+            :prefix-icon="Message"
+          />
+        </el-form-item>
+
         <el-form-item prop="password">
           <el-input
-            v-model="loginForm.password"
+            v-model="registerForm.password"
             type="password"
-            placeholder="请输入密码"
+            placeholder="请输入密码（至少 6 位）"
+            size="large"
+            :prefix-icon="Lock"
+            show-password
+          />
+        </el-form-item>
+
+        <el-form-item prop="confirmPassword">
+          <el-input
+            v-model="registerForm.confirmPassword"
+            type="password"
+            placeholder="请再次输入密码"
             size="large"
             :prefix-icon="Lock"
             show-password
@@ -43,32 +72,21 @@
         </el-form-item>
 
         <el-form-item>
-          <div class="remember-row">
-            <el-checkbox v-model="loginForm.remember">记住我</el-checkbox>
-            <el-link type="primary" :underline="false">忘记密码?</el-link>
-          </div>
-        </el-form-item>
-
-        <el-form-item>
           <el-button
             type="primary"
             size="large"
-            class="login-btn"
+            class="register-btn"
             :loading="loading"
-            @click="handleLogin"
+            @click="handleRegister"
           >
-            {{ loading ? '登录中...' : '登 录' }}
+            {{ loading ? '注册中...' : '注 册' }}
           </el-button>
         </el-form-item>
       </el-form>
 
-      <div class="login-register">
-        <span>还没有账号？</span>
-        <router-link :to="REGISTER_ROUTE" class="register-link">立即注册</router-link>
-      </div>
-
-      <div class="login-footer">
-        <span>© 2026 Nova AI Platform. All rights reserved.</span>
+      <div class="register-footer">
+        <span>已有账号？</span>
+        <router-link :to="LOGIN_ROUTE" class="login-link">立即登录</router-link>
       </div>
     </div>
   </div>
@@ -77,44 +95,63 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import type { FormInstance } from 'element-plus'
-import { User, Lock, Cpu } from '@element-plus/icons-vue'
-import { useUserStore } from '@/store/modules/user'
-import { DEFAULT_ROUTE, REGISTER_ROUTE } from '@/utils/constants'
-import { loginUser } from '@/api/user'
+import type { FormInstance, FormRules } from 'element-plus'
+import { User, UserFilled, Lock, Cpu, Message } from '@element-plus/icons-vue'
+import { registerUser } from '@/api/user'
+import { LOGIN_ROUTE } from '@/utils/constants'
 
 const router = useRouter()
-const userStore = useUserStore()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 
-const loginForm = reactive({
+const registerForm = reactive({
   account: '',
+  name: '',
+  email: '',
   password: '',
-  remember: false,
+  confirmPassword: '',
 })
 
-const rules = {
-  account: [{ required: true, message: '请输入账号', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+const validateConfirmPassword = (_rule: unknown, value: string, callback: (err?: Error) => void) => {
+  if (!value) {
+    callback(new Error('请再次输入密码'))
+    return
+  }
+  if (value !== registerForm.password) {
+    callback(new Error('两次输入的密码不一致'))
+    return
+  }
+  callback()
 }
 
-const handleLogin = async () => {
+const rules: FormRules = {
+  account: [
+    { required: true, message: '请输入账号', trigger: 'blur' },
+    { min: 3, max: 32, message: '账号长度为 3-32 个字符', trigger: 'blur' },
+  ],
+  email: [{ type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码至少 6 位', trigger: 'blur' },
+  ],
+  confirmPassword: [{ validator: validateConfirmPassword, trigger: 'blur' }],
+}
+
+const handleRegister = async () => {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
 
   loading.value = true
   try {
-    const res = await loginUser({
-      account: loginForm.account.trim(),
-      password: loginForm.password,
+    await registerUser({
+      account: registerForm.account.trim(),
+      password: registerForm.password,
+      name: registerForm.name.trim() || undefined,
+      email: registerForm.email.trim() || undefined,
+      role: 'user',
     })
-    userStore.loginFromAuthResponse(res)
-    if (!loginForm.remember) {
-      /* 未勾选「记住我」时仍保留会话于本地，仅作 UI 预留；可与后端 refresh 策略配合 */
-    }
-    ElMessage.success('登录成功')
-    router.push(DEFAULT_ROUTE)
+    ElMessage.success('注册成功，请登录')
+    router.push(LOGIN_ROUTE)
   } finally {
     loading.value = false
   }
@@ -122,7 +159,7 @@ const handleLogin = async () => {
 </script>
 
 <style scoped lang="scss">
-.login-container {
+.register-container {
   height: 100vh;
   display: flex;
   align-items: center;
@@ -132,7 +169,7 @@ const handleLogin = async () => {
   overflow: hidden;
 }
 
-.login-background {
+.register-background {
   position: absolute;
   inset: 0;
 
@@ -181,20 +218,20 @@ const handleLogin = async () => {
   50% { transform: translate(-50%, -50%) scale(1.1); }
 }
 
-.login-card {
+.register-card {
   width: 420px;
-  padding: 48px 40px;
+  padding: 40px 40px 32px;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   z-index: 1;
 }
 
-.login-header {
+.register-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 32px;
 
-  .login-logo-icon {
+  .register-logo-icon {
     width: 64px;
     height: 64px;
     display: inline-flex;
@@ -205,8 +242,8 @@ const handleLogin = async () => {
     margin-bottom: 16px;
   }
 
-  .login-title {
-    font-size: 28px;
+  .register-title {
+    font-size: 26px;
     font-weight: 700;
     color: #1a1a2e;
     margin: 0 0 8px;
@@ -215,22 +252,15 @@ const handleLogin = async () => {
     -webkit-text-fill-color: transparent;
   }
 
-  .login-subtitle {
+  .register-subtitle {
     font-size: 14px;
     color: #606266;
     margin: 0;
   }
 }
 
-.login-form {
-  .remember-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-  }
-
-  .login-btn {
+.register-form {
+  .register-btn {
     width: 100%;
     height: 48px;
     font-size: 16px;
@@ -244,13 +274,13 @@ const handleLogin = async () => {
   }
 }
 
-.login-register {
+.register-footer {
   text-align: center;
-  margin-top: 16px;
+  margin-top: 8px;
   font-size: 14px;
   color: #606266;
 
-  .register-link {
+  .login-link {
     margin-left: 4px;
     color: #667eea;
     text-decoration: none;
@@ -260,12 +290,5 @@ const handleLogin = async () => {
       color: #764ba2;
     }
   }
-}
-
-.login-footer {
-  text-align: center;
-  margin-top: 24px;
-  font-size: 12px;
-  color: #909399;
 }
 </style>

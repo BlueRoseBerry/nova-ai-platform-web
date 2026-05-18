@@ -2,6 +2,7 @@ import axios from 'axios'
 import type { AxiosRequestConfig, AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
 import type { BaseResponse } from '@/types'
+import { STORAGE_KEYS } from '@/utils/constants'
 
 // 创建 axios 实例
 const service = axios.create({
@@ -15,10 +16,13 @@ const service = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   (config) => {
-    // 从 localStorage 获取用户 ID
-    const userId = localStorage.getItem('userId') || 'default-user'
+    const userId = localStorage.getItem(STORAGE_KEYS.USER_ID) || 'default-user'
+    const token = localStorage.getItem(STORAGE_KEYS.TOKEN)
     if (config.headers) {
       config.headers['X-User-Id'] = userId
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
     }
     return config
   },
