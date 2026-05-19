@@ -25,23 +25,7 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      // Agent 独立服务 nova-ai-agent 默认 8082，需先于通用 /api 匹配
-      '/api/v1/agents': {
-        target: 'http://localhost:8082',
-        changeOrigin: true,
-      },
-      '/api/v1/model': {
-        target: 'http://localhost:8084',
-        changeOrigin: true,
-        configure: (proxy) => {
-          proxy.on('proxyRes', (proxyRes, req) => {
-            if (req.url?.includes('/completions/stream')) {
-              proxyRes.headers['cache-control'] = 'no-cache'
-              proxyRes.headers['x-accel-buffering'] = 'no'
-            }
-          })
-        },
-      },
+      // 统一经 nova-ai-gateway (8080) 转发，路由见 nova-ai-gateway/application.yml
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
