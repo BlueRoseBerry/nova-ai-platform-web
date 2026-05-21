@@ -73,13 +73,65 @@ export interface Agent {
   maxTokens: number
 }
 
-// Agent 请求
+// Agent 注册请求（不含 id，由后端自动生成）
+export interface AgentRegisterRequest {
+  name: string
+  role?: string
+  systemPrompt: string
+  skillIds?: string[]
+  config?: Record<string, any>
+  modelId?: string
+  temperature?: number
+  maxTokens?: number
+}
+
+// Agent 请求（旧版 execute）
 export interface AgentRequest {
   agentId: string
   sessionId: string
   query: string
   knowledgeBaseId?: string
   toolNames?: string[]
+}
+
+// Agent 聊天请求（新版 chat / chat-stream）
+export interface AgentChatRequest {
+  agentId: string
+  messages: ChatMessage[]
+  temperature?: number
+  maxTokens?: number
+}
+
+// Agent 聊天响应
+export interface AgentChatResponse {
+  agentId: string
+  modelId: string
+  remoteModelUsed: string
+  content: string
+  promptTokens: number
+  completionTokens: number
+}
+
+// 聊天消息
+export interface ChatMessage {
+  role: string
+  content: string
+}
+
+// Agent 分页请求
+export interface AgentPageRequest {
+  current?: number
+  pageSize?: number
+  name?: string
+}
+
+// Agent 分页响应
+export interface AgentPageResponse {
+  total: number
+  pages: number
+  current: number
+  pageSize: number
+  records: Agent[]
 }
 
 // Agent 响应（密封联合类型）

@@ -1,8 +1,14 @@
 import { request } from '@/utils/request'
+import { STORAGE_KEYS } from '@/utils/constants'
 import type {
   Agent,
+  AgentRegisterRequest,
   AgentRequest,
   AgentResponse,
+  AgentChatRequest,
+  AgentChatResponse,
+  AgentPageRequest,
+  AgentPageResponse,
   WorkflowDefinition,
   WorkflowInstance,
   KnowledgeDocument,
@@ -27,16 +33,38 @@ export const executeAgent = (data: AgentRequest) => {
   return request.post<AgentResponse>('/api/v1/agents/execute', data)
 }
 
+/** 同步聊天接口 */
+export const chatAgent = (data: AgentChatRequest) => {
+  return request.post<AgentChatResponse>('/api/v1/agents/chat', data)
+}
+
+/** 流式聊天接口（SSE），返回原始 Fetch 流，由调用方自行解析 EventSource */
+export const chatStreamAgent = (data: AgentChatRequest): Promise<Response> => {
+  const baseURL = import.meta.env.VITE_API_BASE_URL || ''
+  const token = localStorage.getItem(STORAGE_KEYS.TOKEN)
+  const userId = localStorage.getItem(STORAGE_KEYS.USER_ID) || 'default-user'
+  return fetch(`${baseURL}/api/v1/agents/chat-stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-User-Id': userId,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  })
+}
+
 export const getAgent = (agentId: string) => {
   return request.get<Agent>(`/api/v1/agents/${encodeURIComponent(agentId)}`)
 }
 
-export const listAgents = () => {
-  return request.get<Agent[]>('/api/v1/agents/lists')
+/** 分页查询 Agent 列表（后端已改为 POST + AgentPageRequest） */
+export const listAgents = (params?: AgentPageRequest) => {
+  return request.post<AgentPageResponse>('/api/v1/agents/lists', params ?? {})
 }
 
-export const registerAgent = (data: Agent) => {
-  return request.post<void>('/api/v1/agents/register', data)
+export const registerAgent = (data: AgentRegisterRequest) => {
+  return request.post<Agent>('/api/v1/agents/register', data)
 }
 
 export const updateAgent = (data: Agent) => {

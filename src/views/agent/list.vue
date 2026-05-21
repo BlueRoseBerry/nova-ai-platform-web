@@ -21,6 +21,22 @@
       </el-col>
     </el-row>
 
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+      <el-input
+        v-model="searchName"
+        placeholder="按名称搜索 Agent"
+        clearable
+        style="width: 260px"
+        @clear="loadAgents"
+      >
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
+      <el-button type="primary" @click="loadAgents">查询</el-button>
+    </div>
+
     <!-- Agent 列表 -->
     <el-table :data="agentList" style="width: 100%" v-loading="loading">
       <el-table-column prop="id" label="ID" width="120" />
@@ -59,19 +75,24 @@
       </el-table-column>
     </el-table>
 
+    <!-- 分页 -->
+    <div class="pagination-bar">
+      <el-pagination
+        v-model:current-page="pageCurrent"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="pageTotal"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="loadAgents"
+        @current-change="loadAgents"
+      />
+    </div>
+
     <!-- 创建/编辑对话框 -->
     <el-dialog v-model="showCreateDialog" :title="dialogTitle" width="600px">
       <el-form :model="createForm" label-width="120px">
-        <el-form-item label="Agent ID" required>
-          <el-input
-            v-model="createForm.id"
-            placeholder="唯一标识，可与名称不同；留空则自动生成"
-            :disabled="isEditMode"
-          >
-            <template #append>
-              <el-button @click="createForm.id = generateAgentId()">生成 ID</el-button>
-            </template>
-          </el-input>
+        <el-form-item v-if="isEditMode" label="Agent ID">
+          <el-input v-model="createForm.id" disabled />
         </el-form-item>
         <el-form-item label="Agent 名称" required>
           <el-input v-model="createForm.name" placeholder="请输入 Agent 名称" />
@@ -89,10 +110,12 @@
         </el-form-item>
         <el-form-item label="使用模型">
           <el-select v-model="createForm.modelId" placeholder="选择模型" style="width: 100%">
-            <el-option label="GPT-4" value="gpt-4" />
-            <el-option label="GPT-3.5-Turbo" value="gpt-3.5-turbo" />
-            <el-option label="通义千问" value="qwen-max" />
-            <el-option label="Claude 3" value="claude-3" />
+            <el-option
+              v-for="m in modelList"
+              :key="m.id"
+              :label="m.name"
+              :value="m.id"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="Temperature">
@@ -113,14 +136,15 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus, Cpu } from '@element-plus/icons-vue'
+import { Plus, Cpu, Search } from '@element-plus/icons-vue'
 import {
   deleteRegisteredAgent,
   listAgents,
   registerAgent,
   updateAgent,
+  pageLlmModels,
 } from '@/api'
-import type { Agent } from '@/types'
+import type { Agent, AgentPageResponse, LlmModelResponse } from '@/types'
 
 const router = useRouter()
 const loading = ref(false)
@@ -129,24 +153,39 @@ const isEditMode = ref(false)
 /** 编辑时保留服务端已有 skillIds / config（表单暂未编辑这些字段） */
 const editingSnapshot = ref<Agent | null>(null)
 
+// 分页参数
+const pageCurrent = ref(1)
+const pageSize = ref(10)
+const pageTotal = ref(0)
+const searchName = ref('')
+
+const modelList = ref<LlmModelResponse[]>([])
+
+const loadModels = async () => {
+  try {
+    const data = await pageLlmModels({ pageNum: 1, pageSize: 100, enabled: true })
+    modelList.value = Array.isArray(data?.records) ? data.records : []
+  } catch {
+    modelList.value = []
+  }
+}
+
 const createForm = reactive({
   id: '',
   name: '',
   role: '',
   systemPrompt: '',
-  modelId: 'gpt-4',
+  modelId: '',
   temperature: 0.7,
   maxTokens: 2000,
 })
-
-const generateAgentId = () => `agent-${Date.now().toString(36)}`
 
 const resetCreateForm = () => {
   createForm.id = ''
   createForm.name = ''
   createForm.role = ''
   createForm.systemPrompt = ''
-  createForm.modelId = 'gpt-4'
+  createForm.modelId = ''
   createForm.temperature = 0.7
   createForm.maxTokens = 2000
 }
@@ -179,7 +218,7 @@ const agentList = ref<Agent[]>([])
 const agentStats = computed(() => {
   const n = agentList.value.length
   return [
-    { label: '总 Agent 数', value: String(n) },
+    { label: '总 Agent 数', value: String(pageTotal.value || n) },
     { label: '数据源', value: '后端实时' },
     { label: 'Agent 服务', value: ':8082' },
     { label: '加载中', value: loading.value ? '是' : '否' },
@@ -189,8 +228,13 @@ const agentStats = computed(() => {
 const loadAgents = async () => {
   loading.value = true
   try {
-    const data = await listAgents()
-    agentList.value = Array.isArray(data) ? data : []
+    const data = await listAgents({
+      current: pageCurrent.value,
+      pageSize: pageSize.value,
+      name: searchName.value || undefined,
+    }) as AgentPageResponse
+    agentList.value = Array.isArray(data?.records) ? data.records : []
+    pageTotal.value = data?.total ?? 0
   } catch {
     agentList.value = []
   } finally {
@@ -199,6 +243,7 @@ const loadAgents = async () => {
 }
 
 onMounted(() => {
+  loadModels()
   loadAgents()
 })
 
@@ -244,10 +289,9 @@ const submitAgent = async () => {
     ElMessage.warning('请填写系统提示词')
     return
   }
-  const id = createForm.id.trim() || generateAgentId()
   const snap = editingSnapshot.value
   const payload: Agent = {
-    id,
+    id: isEditMode.value ? createForm.id : '',
     name: createForm.name.trim(),
     role: (createForm.role || 'assistant').trim(),
     systemPrompt: createForm.systemPrompt.trim(),
@@ -300,6 +344,19 @@ const submitAgent = async () => {
         margin-top: 4px;
       }
     }
+  }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .pagination-bar {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
   }
 
   .agent-name-cell {
